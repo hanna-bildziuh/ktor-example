@@ -10,6 +10,11 @@ import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.transactions.transaction
+import repositories.database.Users
+import repositories.services.UserRepositoryImplementation
+import routes.configureAuthRoutes
 import routes.configureGenericRoutes
 
 fun main() {
@@ -58,19 +63,17 @@ fun configureDatabase() {
         password = ""
     )
 
-    // TODO: Create database tables when models are defined
-    // transaction {
-    //     SchemaUtils.create(Users)
-    // }
+    // Create database tables
+    transaction {
+        SchemaUtils.create(Users)
+    }
 }
 
 fun Application.configureRouting() {
+    val userRepository = UserRepositoryImplementation()
+
     routing {
         configureGenericRoutes()
-
-        // TODO: Add authentication routes
-        // route("/api/auth") {
-        //     configureAuthRoutes()
-        // }
+        configureAuthRoutes(userRepository)
     }
 }
