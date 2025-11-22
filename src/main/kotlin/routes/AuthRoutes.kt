@@ -7,11 +7,11 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import models.dto.ErrorResponse
+import models.dto.Problem
 import models.dto.RegisterRequest
-import models.dto.RegisterResponse
 import repositories.UserRepository
 import utils.ValidationUtils
+import java.net.URI
 
 fun Route.configureAuthRoutes(userRepository: UserRepository) {
     route("/api/auth") {
@@ -23,9 +23,11 @@ fun Route.configureAuthRoutes(userRepository: UserRepository) {
                 if (!validation.isValid) {
                     call.respond(
                         HttpStatusCode.BadRequest,
-                        ErrorResponse(
-                            success = false,
-                            error = validation.errorMessage ?: "Invalid request"
+                        Problem(
+                            type = URI.create("https://whattoeat.example.com/problems/validation-error"),
+                            title = "Validation Error",
+                            status = 400,
+                            detail = validation.errorMessage ?: "Invalid request"
                         )
                     )
                     return@post
@@ -35,27 +37,22 @@ fun Route.configureAuthRoutes(userRepository: UserRepository) {
 
                 result.fold(
                     onSuccess = { userData ->
-                        call.respond(
-                            HttpStatusCode.Created,
-                            RegisterResponse(
-                                success = true,
-                                message = "Account created successfully",
-                                data = userData
-                            )
-                        )
+                        call.respond(HttpStatusCode.Created, userData)
                     },
                     onFailure = { exception ->
-                        val statusCode = when {
-                            exception.message?.contains("already registered") == true ->
-                                HttpStatusCode.Conflict
-                            else -> HttpStatusCode.InternalServerError
-                        }
+                        val isConflict = exception.message?.contains("already registered") == true
+                        val statusCode = if (isConflict) HttpStatusCode.Conflict else HttpStatusCode.InternalServerError
 
                         call.respond(
                             statusCode,
-                            ErrorResponse(
-                                success = false,
-                                error = exception.message ?: "Failed to create account"
+                            Problem(
+                                type = URI.create(
+                                    if (isConflict) "https://whattoeat.example.com/problems/conflict"
+                                    else "https://whattoeat.example.com/problems/server-error"
+                                ),
+                                title = if (isConflict) "Resource Conflict" else "Internal Server Error",
+                                status = statusCode.value,
+                                detail = exception.message ?: "Failed to create account"
                             )
                         )
                     }
@@ -63,9 +60,11 @@ fun Route.configureAuthRoutes(userRepository: UserRepository) {
             } catch (e: Exception) {
                 call.respond(
                     HttpStatusCode.BadRequest,
-                    ErrorResponse(
-                        success = false,
-                        error = "Invalid request format"
+                    Problem(
+                        type = URI.create("https://whattoeat.example.com/problems/validation-error"),
+                        title = "Validation Error",
+                        status = 400,
+                        detail = "Invalid request format"
                     )
                 )
             }

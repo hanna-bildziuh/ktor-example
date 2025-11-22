@@ -4,6 +4,8 @@ info:
   description: |
     Recipe management API with account creation, authentication, and recipe search functionality.
     Users can create accounts, search for recipes using LLM integration, and save favorite recipes.
+
+    This API follows the Zalando RESTful API Guidelines (https://opensource.zalando.com/restful-api-guidelines/).
   version: 1.0.0
   contact:
     name: WhatToEat API Support
@@ -69,52 +71,55 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RegisterResponse'
+                $ref: '#/components/schemas/UserData'
               examples:
                 success:
                   summary: Successful registration
                   value:
-                    success: true
-                    message: Account created successfully
-                    data:
-                      userId: 1
-                      email: user@example.com
-                      createdAt: "2025-11-22T20:15:00"
+                    user_id: 1
+                    email: user@example.com
+                    created_at: "2025-11-22T20:15:00Z"
         '400':
           description: Invalid input data
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Problem'
               examples:
                 invalidEmail:
                   summary: Invalid email format
                   value:
-                    success: false
-                    error: Invalid email format
+                    type: "https://whattoeat.example.com/problems/validation-error"
+                    title: "Validation Error"
+                    status: 400
+                    detail: "Invalid email format"
                 weakPassword:
                   summary: Weak password
                   value:
-                    success: false
-                    error: Password must contain at least one uppercase letter
+                    type: "https://whattoeat.example.com/problems/validation-error"
+                    title: "Validation Error"
+                    status: 400
+                    detail: "Password must contain at least one uppercase letter"
         '409':
           description: Email already registered
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Problem'
               examples:
                 emailExists:
                   summary: Email already exists
                   value:
-                    success: false
-                    error: Email already registered
+                    type: "https://whattoeat.example.com/problems/conflict"
+                    title: "Resource Conflict"
+                    status: 409
+                    detail: "Email already registered"
         '500':
           description: Internal server error
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Problem'
 
   /api/auth/login:
     post:
@@ -144,43 +149,42 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
+                $ref: '#/components/schemas/AuthData'
               examples:
                 success:
                   summary: Successful login
                   value:
-                    success: true
-                    message: Login successful
-                    data:
-                      userId: 1
-                      email: user@example.com
-                      accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-                      refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-                      expiresIn: 3600
+                    user_id: 1
+                    email: user@example.com
+                    access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    expires_in: 3600
         '400':
           description: Invalid input data
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Problem'
         '401':
           description: Invalid credentials
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Problem'
               examples:
                 invalidCredentials:
                   summary: Invalid email or password
                   value:
-                    success: false
-                    error: Invalid email or password
+                    type: "https://whattoeat.example.com/problems/authentication-failed"
+                    title: "Authentication Failed"
+                    status: 401
+                    detail: "Invalid email or password"
         '500':
           description: Internal server error
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Problem'
 
   /api/auth/refresh:
     post:
@@ -201,48 +205,47 @@ paths:
               validRequest:
                 summary: Valid refresh token request
                 value:
-                  refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       responses:
         '200':
           description: Token refreshed successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RefreshTokenResponse'
+                $ref: '#/components/schemas/TokenData'
               examples:
                 success:
                   summary: Successful token refresh
                   value:
-                    success: true
-                    message: Token refreshed successfully
-                    data:
-                      accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-                      refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-                      expiresIn: 3600
+                    access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    expires_in: 3600
         '400':
           description: Invalid input data
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Problem'
         '401':
           description: Invalid or expired refresh token
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Problem'
               examples:
                 invalidToken:
                   summary: Invalid refresh token
                   value:
-                    success: false
-                    error: Invalid or expired refresh token
+                    type: "https://whattoeat.example.com/problems/authentication-failed"
+                    title: "Authentication Failed"
+                    status: 401
+                    detail: "Invalid or expired refresh token"
         '500':
           description: Internal server error
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Problem'
 
   /api/user/profile:
     get:
@@ -259,40 +262,42 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserProfileResponse'
+                $ref: '#/components/schemas/UserProfile'
               examples:
                 success:
                   summary: Successful profile retrieval
                   value:
-                    success: true
-                    data:
-                      userId: 1
-                      email: user@example.com
-                      createdAt: "2025-11-22T20:15:00"
-                      updatedAt: "2025-11-22T20:15:00"
+                    user_id: 1
+                    email: user@example.com
+                    created_at: "2025-11-22T20:15:00Z"
+                    updated_at: "2025-11-22T20:15:00Z"
         '401':
           description: Unauthorized - Missing or invalid token
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Problem'
               examples:
                 missingToken:
                   summary: Missing authentication token
                   value:
-                    success: false
-                    error: Authentication required
+                    type: "https://whattoeat.example.com/problems/authentication-required"
+                    title: "Authentication Required"
+                    status: 401
+                    detail: "Missing or invalid authentication token"
                 invalidToken:
                   summary: Invalid token
                   value:
-                    success: false
-                    error: Invalid or expired token
+                    type: "https://whattoeat.example.com/problems/authentication-failed"
+                    title: "Authentication Failed"
+                    status: 401
+                    detail: "Invalid or expired token"
         '500':
           description: Internal server error
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Problem'
 
 components:
   securitySchemes:
@@ -329,20 +334,6 @@ components:
             - One special character
           example: SecurePass123!
 
-    RegisterResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          description: Indicates if the operation was successful
-          example: true
-        message:
-          type: string
-          description: Human-readable message
-          example: Account created successfully
-        data:
-          $ref: '#/components/schemas/UserData'
-
     LoginRequest:
       type: object
       required:
@@ -360,67 +351,53 @@ components:
           description: User's password
           example: SecurePass123!
 
-    LoginResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-          example: Login successful
-        data:
-          $ref: '#/components/schemas/AuthData'
-
     RefreshTokenRequest:
       type: object
       required:
-        - refreshToken
+        - refresh_token
       properties:
-        refreshToken:
+        refresh_token:
           type: string
           description: Valid refresh token
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-    RefreshTokenResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-          example: Token refreshed successfully
-        data:
-          $ref: '#/components/schemas/TokenData'
-
-    UserProfileResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          $ref: '#/components/schemas/UserProfile'
-
-    ErrorResponse:
+    Problem:
       type: object
       required:
-        - success
-        - error
+        - type
+        - title
+        - status
       properties:
-        success:
-          type: boolean
-          example: false
-        error:
+        type:
           type: string
-          description: Error message describing what went wrong
-          example: Invalid email format
+          format: uri
+          description: |
+            A URI reference that identifies the problem type.
+            When dereferenced, it should provide human-readable documentation.
+          example: "https://whattoeat.example.com/problems/validation-error"
+        title:
+          type: string
+          description: A short, human-readable summary of the problem type
+          example: "Validation Error"
+        status:
+          type: integer
+          format: int32
+          description: The HTTP status code
+          example: 400
+        detail:
+          type: string
+          description: A human-readable explanation specific to this occurrence of the problem
+          example: "The email field must be a valid email address"
+        instance:
+          type: string
+          format: uri
+          description: A URI reference that identifies the specific occurrence of the problem
+          example: "/api/auth/register"
 
     UserData:
       type: object
       properties:
-        userId:
+        user_id:
           type: integer
           description: Unique user identifier
           example: 1
@@ -429,31 +406,31 @@ components:
           format: email
           description: User's email address
           example: user@example.com
-        createdAt:
+        created_at:
           type: string
           format: date-time
-          description: Account creation timestamp
-          example: "2025-11-22T20:15:00"
+          description: Account creation timestamp in RFC 3339 format
+          example: "2025-11-22T20:15:00Z"
 
     AuthData:
       type: object
       properties:
-        userId:
+        user_id:
           type: integer
           example: 1
         email:
           type: string
           format: email
           example: user@example.com
-        accessToken:
+        access_token:
           type: string
           description: JWT access token for authenticated requests
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        refreshToken:
+        refresh_token:
           type: string
           description: JWT refresh token for obtaining new access tokens
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        expiresIn:
+        expires_in:
           type: integer
           description: Access token expiration time in seconds
           example: 3600
@@ -461,15 +438,15 @@ components:
     TokenData:
       type: object
       properties:
-        accessToken:
+        access_token:
           type: string
           description: New JWT access token
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        refreshToken:
+        refresh_token:
           type: string
           description: New JWT refresh token
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        expiresIn:
+        expires_in:
           type: integer
           description: Access token expiration time in seconds
           example: 3600
@@ -477,18 +454,20 @@ components:
     UserProfile:
       type: object
       properties:
-        userId:
+        user_id:
           type: integer
           example: 1
         email:
           type: string
           format: email
           example: user@example.com
-        createdAt:
+        created_at:
           type: string
           format: date-time
-          example: "2025-11-22T20:15:00"
-        updatedAt:
+          description: Account creation timestamp in RFC 3339 format
+          example: "2025-11-22T20:15:00Z"
+        updated_at:
           type: string
           format: date-time
-          example: "2025-11-22T20:15:00"
+          description: Last profile update timestamp in RFC 3339 format
+          example: "2025-11-22T20:15:00Z"
