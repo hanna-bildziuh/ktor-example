@@ -39,7 +39,7 @@ paths:
                 type: string
                 example: OK
 
-  /api/auth/register:
+  /auth/register:
     post:
       tags:
         - Authentication
@@ -121,7 +121,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
 
-  /api/auth/login:
+  /auth/login:
     post:
       tags:
         - Authentication
@@ -186,7 +186,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
 
-  /api/auth/refresh:
+  /auth/refresh:
     post:
       tags:
         - Authentication
@@ -247,7 +247,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Problem'
 
-  /api/user/profile:
+  /user/profile:
     get:
       tags:
         - User
@@ -370,9 +370,8 @@ components:
       properties:
         type:
           type: string
-          format: uri
           description: |
-            A URI reference that identifies the problem type.
+            A URI reference (string) that identifies the problem type.
             When dereferenced, it should provide human-readable documentation.
           example: "https://whattoeat.example.com/problems/validation-error"
         title:
@@ -390,9 +389,8 @@ components:
           example: "The email field must be a valid email address"
         instance:
           type: string
-          format: uri
-          description: A URI reference that identifies the specific occurrence of the problem
-          example: "/api/auth/register"
+          description: A URI reference (string) that identifies the specific occurrence of the problem
+          example: "/auth/register"
 
     UserData:
       type: object

@@ -1,7 +1,6 @@
 package routes
 
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -11,10 +10,9 @@ import models.dto.Problem
 import models.dto.RegisterRequest
 import repositories.UserRepository
 import utils.ValidationUtils
-import java.net.URI
 
 fun Route.configureAuthRoutes(userRepository: UserRepository) {
-    route("/api/auth") {
+    route("/auth") {
         post("/register") {
             try {
                 val request = call.receive<RegisterRequest>()
@@ -24,7 +22,7 @@ fun Route.configureAuthRoutes(userRepository: UserRepository) {
                     call.respond(
                         HttpStatusCode.BadRequest,
                         Problem(
-                            type = URI.create("https://whattoeat.example.com/problems/validation-error"),
+                            type = "https://whattoeat.example.com/problems/validation-error",
                             title = "Validation Error",
                             status = 400,
                             detail = validation.errorMessage ?: "Invalid request"
@@ -46,10 +44,8 @@ fun Route.configureAuthRoutes(userRepository: UserRepository) {
                         call.respond(
                             statusCode,
                             Problem(
-                                type = URI.create(
-                                    if (isConflict) "https://whattoeat.example.com/problems/conflict"
-                                    else "https://whattoeat.example.com/problems/server-error"
-                                ),
+                                type = if (isConflict) "https://whattoeat.example.com/problems/conflict"
+                                    else "https://whattoeat.example.com/problems/server-error",
                                 title = if (isConflict) "Resource Conflict" else "Internal Server Error",
                                 status = statusCode.value,
                                 detail = exception.message ?: "Failed to create account"
@@ -61,7 +57,7 @@ fun Route.configureAuthRoutes(userRepository: UserRepository) {
                 call.respond(
                     HttpStatusCode.BadRequest,
                     Problem(
-                        type = URI.create("https://whattoeat.example.com/problems/validation-error"),
+                        type = "https://whattoeat.example.com/problems/validation-error",
                         title = "Validation Error",
                         status = 400,
                         detail = "Invalid request format"
