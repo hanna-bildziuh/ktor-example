@@ -1,0 +1,494 @@
+openapi: 3.0.3
+info:
+  title: WhatToEat API
+  description: |
+    Recipe management API with account creation, authentication, and recipe search functionality.
+    Users can create accounts, search for recipes using LLM integration, and save favorite recipes.
+  version: 1.0.0
+  contact:
+    name: WhatToEat API Support
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: Account management and authentication endpoints
+  - name: User
+    description: User profile and settings endpoints
+  - name: Health
+    description: System health and status endpoints
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Returns the health status of the API
+      operationId: healthCheck
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: OK
+
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Create new account
+      description: |
+        Register a new user account with email and password.
+        Password must meet security requirements:
+        - Minimum 8 characters
+        - At least one uppercase letter
+        - At least one lowercase letter
+        - At least one digit
+        - At least one special character
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              validRequest:
+                summary: Valid registration request
+                value:
+                  email: user@example.com
+                  password: SecurePass123!
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+              examples:
+                success:
+                  summary: Successful registration
+                  value:
+                    success: true
+                    message: Account created successfully
+                    data:
+                      userId: 1
+                      email: user@example.com
+                      createdAt: "2025-11-22T20:15:00"
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    success: false
+                    error: Invalid email format
+                weakPassword:
+                  summary: Weak password
+                  value:
+                    success: false
+                    error: Password must contain at least one uppercase letter
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailExists:
+                  summary: Email already exists
+                  value:
+                    success: false
+                    error: Email already registered
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login to account
+      description: |
+        Authenticate with email and password to receive JWT access and refresh tokens.
+        The access token should be used for authenticated requests.
+        The refresh token can be used to obtain a new access token when it expires.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              validRequest:
+                summary: Valid login request
+                value:
+                  email: user@example.com
+                  password: SecurePass123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                success:
+                  summary: Successful login
+                  value:
+                    success: true
+                    message: Login successful
+                    data:
+                      userId: 1
+                      email: user@example.com
+                      accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      expiresIn: 3600
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: Invalid email or password
+                  value:
+                    success: false
+                    error: Invalid email or password
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: |
+        Use a valid refresh token to obtain a new access token.
+        This should be called when the access token expires.
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+            examples:
+              validRequest:
+                summary: Valid refresh token request
+                value:
+                  refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+              examples:
+                success:
+                  summary: Successful token refresh
+                  value:
+                    success: true
+                    message: Token refreshed successfully
+                    data:
+                      accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      expiresIn: 3600
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidToken:
+                  summary: Invalid refresh token
+                  value:
+                    success: false
+                    error: Invalid or expired refresh token
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/user/profile:
+    get:
+      tags:
+        - User
+      summary: Get user profile
+      description: Get the profile information for the authenticated user
+      operationId: getUserProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+              examples:
+                success:
+                  summary: Successful profile retrieval
+                  value:
+                    success: true
+                    data:
+                      userId: 1
+                      email: user@example.com
+                      createdAt: "2025-11-22T20:15:00"
+                      updatedAt: "2025-11-22T20:15:00"
+        '401':
+          description: Unauthorized - Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingToken:
+                  summary: Missing authentication token
+                  value:
+                    success: false
+                    error: Authentication required
+                invalidToken:
+                  summary: Invalid token
+                  value:
+                    success: false
+                    error: Invalid or expired token
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token obtained from login or refresh endpoints
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: User's email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          description: |
+            User's password. Must contain:
+            - At least 8 characters
+            - One uppercase letter
+            - One lowercase letter
+            - One digit
+            - One special character
+          example: SecurePass123!
+
+    RegisterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the operation was successful
+          example: true
+        message:
+          type: string
+          description: Human-readable message
+          example: Account created successfully
+        data:
+          $ref: '#/components/schemas/UserData'
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: User's password
+          example: SecurePass123!
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Login successful
+        data:
+          $ref: '#/components/schemas/AuthData'
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          description: Valid refresh token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    RefreshTokenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Token refreshed successfully
+        data:
+          $ref: '#/components/schemas/TokenData'
+
+    UserProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/UserProfile'
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message describing what went wrong
+          example: Invalid email format
+
+    UserData:
+      type: object
+      properties:
+        userId:
+          type: integer
+          description: Unique user identifier
+          example: 1
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+          example: "2025-11-22T20:15:00"
+
+    AuthData:
+      type: object
+      properties:
+        userId:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        accessToken:
+          type: string
+          description: JWT access token for authenticated requests
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          description: JWT refresh token for obtaining new access tokens
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiresIn:
+          type: integer
+          description: Access token expiration time in seconds
+          example: 3600
+
+    TokenData:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: New JWT access token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          description: New JWT refresh token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiresIn:
+          type: integer
+          description: Access token expiration time in seconds
+          example: 3600
+
+    UserProfile:
+      type: object
+      properties:
+        userId:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-11-22T20:15:00"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-11-22T20:15:00"
