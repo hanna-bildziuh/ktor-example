@@ -1,5 +1,7 @@
 package repositories.services
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import models.dto.UserData
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insert
@@ -15,11 +17,16 @@ class UserRepositoryImplementation : UserRepository {
 
     override suspend fun createUser(email: String, password: String): Result<UserData> {
         return try {
-            if (emailExists(email)) {
+            val (exists, hashedPassword) = coroutineScope {
+                val existsDeferred = async { emailExists(email) }
+                val hashDeferred = async { PasswordUtils.hashPassword(password) }
+                existsDeferred.await() to hashDeferred.await()
+            }
+
+            if (exists) {
                 return Result.failure(Exception("The email is already registered"))
             }
 
-            val hashedPassword = PasswordUtils.hashPassword(password)
             val now = Instant.now()
 
             val userId = dbQuery {
