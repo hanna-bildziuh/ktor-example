@@ -22,9 +22,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import routes.configureAuthRoutes
 import routes.configureGenericRoutes
+import routes.configureRecipeRoutes
 import routes.configureUserRoutes
 import services.HealthService
 import services.NotificationService
+import services.RecipeCache
+import services.RecipeService
+import services.claude.ClaudeClient
+import services.claude.ClaudeClientImplementation
 
 fun main() {
     embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = Application::module)
@@ -80,15 +85,27 @@ fun configureDatabase() {
     }
 }
 
-fun Application.configureRouting() {
+fun Application.configureRouting(claudeClient: ClaudeClient? = null) {
     val userRepository = UserRepositoryImplementation()
     val tokenRepository = TokenRepositoryImplementation()
     val notificationService = NotificationService(CoroutineScope(coroutineContext + SupervisorJob()))
     val healthService = HealthService()
+    val recipeCache = RecipeCache()
+    val recipeService = RecipeService(claudeClient ?: ClaudeClientImplementation(), recipeCache)
 
     routing {
         configureGenericRoutes(healthService)
         configureAuthRoutes(userRepository, tokenRepository, notificationService)
         configureUserRoutes(userRepository)
+        configureRecipeRoutes(recipeService)
     }
+}
+
+fun Application.testModule(claudeClient: ClaudeClient) {
+    configureCORS()
+    configureSerialization()
+    configureStatusPages()
+    configureAuthentication()
+    configureDatabase()
+    configureRouting(claudeClient)
 }

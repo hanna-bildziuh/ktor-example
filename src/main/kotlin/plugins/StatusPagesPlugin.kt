@@ -8,6 +8,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
+import kotlinx.coroutines.TimeoutCancellationException
 import models.dto.Problem
 
 fun Application.configureStatusPages() {
@@ -44,6 +45,18 @@ fun Application.configureStatusPages() {
                     title = "Authentication Required",
                     status = 401,
                     detail = cause.message ?: "Authentication required"
+                )
+            )
+        }
+
+        exception<TimeoutCancellationException> { call, _ ->
+            call.respond(
+                HttpStatusCode.GatewayTimeout,
+                Problem(
+                    type = "https://whattoeat.example.com/problems/gateway-timeout",
+                    title = "Gateway Timeout",
+                    status = 504,
+                    detail = "The upstream service did not respond in time"
                 )
             )
         }

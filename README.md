@@ -18,6 +18,8 @@ WhatToEat lets users create accounts, authenticate with JWT tokens, and manage t
 
 **Background Notifications** -- Welcome emails are sent asynchronously after registration using fire-and-forget coroutines, so the HTTP response is not blocked.
 
+**AI Recipe Search** -- Search for recipes by providing ingredients and dietary restrictions. The system builds a prompt, queries the Claude API (Haiku 4.5), and returns a structured recipe. Results are cached with Caffeine to minimize API calls, with per-key Mutex preventing cache stampedes.
+
 ## Coroutine Patterns
 
 This project demonstrates several Kotlin coroutine patterns applied to genuine use cases:
@@ -29,6 +31,10 @@ This project demonstrates several Kotlin coroutine patterns applied to genuine u
 | `coroutineScope { async {} }` | Login token generation | Generates access and refresh tokens concurrently |
 | `scope.launch` | Notification service | Fire-and-forget background work after registration |
 | `async` + `withTimeoutOrNull` | Health checks | Resilient parallel subsystem checks with deadlines |
+| Ktor HTTP Client (suspend) | Claude API client | Suspend-based external HTTP calls |
+| `withTimeout` | Claude API client | Hard deadline on API calls (throws on timeout) |
+| `Mutex` (per-key) | Recipe cache | Prevents cache stampede via double-check locking |
+| `Semaphore` | Claude API client | Rate-limits concurrent API calls |
 
 ## Tech Stack
 
@@ -38,6 +44,7 @@ This project demonstrates several Kotlin coroutine patterns applied to genuine u
 - **kotlinx.serialization** for JSON
 - **BCrypt** for password hashing
 - **JWT** (auth0) for authentication
+- **Caffeine** for in-memory caching
 - **JUnit 5** + Ktor test host for testing
 
 ## API Endpoints
@@ -47,6 +54,7 @@ This project demonstrates several Kotlin coroutine patterns applied to genuine u
 | `POST` | `/auth/register` | Create new account | No |
 | `POST` | `/auth/login` | Login, receive tokens | No |
 | `POST` | `/auth/refresh` | Rotate refresh token | No |
+| `POST` | `/recipes/search` | AI-powered recipe search | JWT |
 | `GET` | `/user/profile` | Get user profile | JWT |
 | `GET` | `/health` | System health status | No |
 | `GET` | `/swagger` | Interactive API docs | No |
@@ -73,9 +81,10 @@ src/main/kotlin/
   WhatToEat.kt                    # Application entry point and configuration
   exceptions/                      # Custom exception types (ValidationException, etc.)
   plugins/                         # Ktor plugins (Auth, StatusPages)
-  routes/                          # Route handlers (Auth, User, Generic)
+  routes/                          # Route handlers (Auth, User, Recipe, Generic)
   repositories/                    # Data access layer (interfaces + implementations)
-  services/                        # Business services (Health, Notification)
+  services/                        # Business services (Health, Notification, RecipeCache, RecipeService)
+  services/claude/                 # Claude API client (interface + implementation)
   utils/                           # Utilities (JWT, Password, Validation)
 src/main/resources/
   openapi.yaml                     # OpenAPI 3.0 specification
