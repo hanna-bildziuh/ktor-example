@@ -5,7 +5,16 @@ The WhatToEat Ktor app currently has working auth flows but uses coroutines mini
 
 ---
 
-## Feature 1: Coroutine-Aware Password Hashing
+## Step 0: Add Test Dependency
+
+**Add dependency to `pom.xml`:**
+- `kotlinx-coroutines-test:1.10.1` (test scope)
+
+**Verify:** `mvn compile` passes.
+
+---
+
+## Step 1: Coroutine-Aware Password Hashing
 **Pattern:** `withContext(Dispatchers.Default)` for CPU-bound work
 **Why genuine:** BCrypt with 12 salt rounds takes ~250ms and currently blocks the Ktor event loop thread.
 
@@ -13,9 +22,16 @@ The WhatToEat Ktor app currently has working auth flows but uses coroutines mini
 - Make `hashPassword` and `verifyPassword` suspend functions
 - Wrap BCrypt calls in `withContext(dispatcher)` with an injectable `CoroutineDispatcher` parameter (defaults to `Dispatchers.Default`)
 
+**Tests — update:** `src/test/kotlin/utils/PasswordUtilsTest.kt`
+- Suspend hashing works correctly
+- Verify returns true/false correctly
+- Runs on provided dispatcher (inject `StandardTestDispatcher`)
+
+**Verify:** `mvn test` — all tests pass.
+
 ---
 
-## Feature 2: Parallel Registration Processing
+## Step 2: Parallel Registration Processing
 **Pattern:** `coroutineScope { async { } }` for structured concurrency
 **Why genuine:** `emailExists()` (DB query) and `hashPassword()` (CPU work) are independent — running them in parallel saves ~250ms per registration.
 
@@ -23,9 +39,15 @@ The WhatToEat Ktor app currently has working auth flows but uses coroutines mini
 - Refactor `createUser` to run `emailExists` and `hashPassword` concurrently via `async`
 - Use `coroutineScope` to maintain structured concurrency
 
+**Tests — update:** `src/test/kotlin/repositories/UserRepositoryTest.kt`
+- Parallel email check + hash in `createUser`
+- Duplicate email failure still works
+
+**Verify:** `mvn test` — all tests pass.
+
 ---
 
-## Feature 3: Background Notification Service
+## Step 3: Background Notification Service
 **Pattern:** `scope.launch` for fire-and-forget background work
 **Why genuine:** Welcome email after registration should not block the HTTP response.
 
@@ -37,9 +59,20 @@ The WhatToEat Ktor app currently has working auth flows but uses coroutines mini
 - `src/main/kotlin/routes/AuthRoutes.kt` — accept `NotificationService`, call `sendWelcomeNotification` after successful registration
 - `src/main/kotlin/WhatToEat.kt` — create `NotificationServiceImplementation` with application coroutine scope, pass to routes
 
+**Tests — create:** `src/test/kotlin/services/NotificationServiceTest.kt`
+- Launch doesn't block caller
+- `advanceUntilIdle` completes the notification
+- Cancellation of scope cancels pending notifications
+
+**Tests — update:** `src/test/kotlin/routes/AuthRoutesTest.kt`
+- Register (201) still works with notification wired in
+- Register (409) for duplicate email still works
+
+**Verify:** `mvn test` — all tests pass.
+
 ---
 
-## Feature 4: Enhanced Parallel Health Check
+## Step 4: Enhanced Parallel Health Check
 **Pattern:** `coroutineScope { async { } }` + `withTimeoutOrNull` for resilient parallel checks
 **Why genuine:** Production health endpoints check multiple subsystems concurrently with timeouts.
 
@@ -51,9 +84,18 @@ The WhatToEat Ktor app currently has working auth flows but uses coroutines mini
 - `src/main/kotlin/routes/GenericRoute.kt` — accept `HealthService`, return structured JSON instead of plain "OK"
 - `src/main/kotlin/WhatToEat.kt` — create `HealthServiceImplementation`, pass to generic routes
 
+**Tests — create:** `src/test/kotlin/services/HealthServiceTest.kt`
+- Parallel checks return structured status
+- Timeout produces "down" component status
+
+**Tests — create:** `src/test/kotlin/routes/HealthRouteTest.kt`
+- Integration test for `/health` JSON response
+
+**Verify:** `mvn test` — all tests pass.
+
 ---
 
-## Feature 5: Parallel Login Token Generation
+## Step 5: Parallel Login Token Generation
 **Pattern:** `coroutineScope { async { } }` in request handler
 **Why:** Mostly pedagogical (JWT signing is fast), but demonstrates `async`/`await` in a different context.
 
@@ -61,54 +103,36 @@ The WhatToEat Ktor app currently has working auth flows but uses coroutines mini
 - After password verification in login handler, generate access + refresh tokens in parallel with `async`
 - Store refresh token concurrently
 
----
+**Tests — update:** `src/test/kotlin/routes/AuthRoutesTest.kt`
+- Login (200) still returns valid tokens
+- Login (401) for wrong password still works
 
-## Feature 6: Coroutine Tests
-**Pattern:** `runTest`, `TestScope`, `StandardTestDispatcher`, `backgroundScope`, `advanceUntilIdle`
-
-**Add dependency to `pom.xml`:**
-- `kotlinx-coroutines-test:1.10.1` (test scope)
-
-**Create test files:**
-
-| File | Tests |
-|------|-------|
-| `src/test/kotlin/utils/PasswordUtilsTest.kt` | Suspend hashing works, verify returns true/false correctly, runs on provided dispatcher |
-| `src/test/kotlin/services/NotificationServiceTest.kt` | Launch doesn't block, `advanceUntilIdle` completes notification, cancellation works |
-| `src/test/kotlin/services/HealthServiceTest.kt` | Parallel checks return structured status, timeout produces "down" |
-| `src/test/kotlin/repositories/UserRepositoryTest.kt` | Parallel email check + hash in createUser, duplicate email failure |
-| `src/test/kotlin/routes/AuthRoutesTest.kt` | Integration tests with `testApplication` for register (201, 409) and login (200, 401) |
-| `src/test/kotlin/routes/HealthRouteTest.kt` | Integration test for `/health` JSON response |
+**Verify:** `mvn test` — all tests pass.
 
 ---
-
-## Implementation Order
-1. `pom.xml` — add `kotlinx-coroutines-test`
-2. Feature 1 — PasswordUtils (other features depend on this)
-3. Feature 2 — Parallel registration (depends on Feature 1)
-4. Feature 3 — NotificationService + wiring
-5. Feature 4 — HealthService + wiring
-6. Feature 5 — Login refactor
-7. Feature 6 — All tests
 
 ## Files Summary
 
 **Modify (6):** `pom.xml`, `PasswordUtils.kt`, `UserRepositoryImplementation.kt`, `AuthRoutes.kt`, `GenericRoute.kt`, `WhatToEat.kt`
-**Create (10):** 4 service files + 6 test files
+**Create (4):** `NotificationService.kt`, `NotificationServiceImplementation.kt`, `HealthService.kt`, `HealthServiceImplementation.kt`
+**Create tests (3):** `NotificationServiceTest.kt`, `HealthServiceTest.kt`, `HealthRouteTest.kt`
+**Update tests (3):** `PasswordUtilsTest.kt`, `UserRepositoryTest.kt`, `AuthRoutesTest.kt`
 
 ## Coroutine Pattern Coverage
 
-| Pattern | Feature | Genuine? |
-|---------|---------|----------|
-| `withContext(Dispatchers.Default)` | PasswordUtils | Yes — unblocks event loop |
-| `coroutineScope { async {} }` | Parallel registration | Yes — saves ~250ms |
-| `scope.launch` (fire-and-forget) | NotificationService | Yes — background work |
-| `async` + `withTimeoutOrNull` | Health checks | Yes — resilient parallel checks |
-| `coroutineScope { async {} }` | Login tokens | Pedagogical |
-| `runTest` / `TestScope` / `backgroundScope` | All tests | Yes — proper coroutine testing |
+| Pattern | Step | Genuine? |
+|---------|------|----------|
+| `withContext(Dispatchers.Default)` | 1 — PasswordUtils | Yes — unblocks event loop |
+| `coroutineScope { async {} }` | 2 — Parallel registration | Yes — saves ~250ms |
+| `scope.launch` (fire-and-forget) | 3 — NotificationService | Yes — background work |
+| `async` + `withTimeoutOrNull` | 4 — Health checks | Yes — resilient parallel checks |
+| `coroutineScope { async {} }` | 5 — Login tokens | Pedagogical |
+| `runTest` / `TestScope` / `backgroundScope` | 1–5 (each step) | Yes — proper coroutine testing |
 
 ## Verification
-1. `mvn compile` — project builds
-2. `mvn test` — all tests pass
-3. Manual: start server, `curl POST /auth/register` — returns 201, server logs show background notification
-4. Manual: `curl GET /health` — returns JSON with component statuses and response times
+After each step: `mvn test` — all tests pass.
+
+Final:
+1. `mvn test` — full suite green
+2. Manual: start server, `curl POST /auth/register` — returns 201, server logs show background notification
+3. Manual: `curl GET /health` — returns JSON with component statuses and response times
