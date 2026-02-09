@@ -11,6 +11,7 @@ import repositories.UserRepository
 import repositories.database.User
 import repositories.database.Users
 import utils.PasswordUtils
+import java.sql.SQLIntegrityConstraintViolationException
 import java.time.Instant
 
 class UserRepositoryImplementation : UserRepository {
@@ -45,6 +46,8 @@ class UserRepositoryImplementation : UserRepository {
             )
 
             Result.success(userData)
+        } catch (e: SQLIntegrityConstraintViolationException) {
+            Result.failure(Exception("The email is already registered"))
         } catch (e: Exception) {
             Result.failure(e)
         }

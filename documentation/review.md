@@ -32,7 +32,7 @@ CoroutineScope(coroutineContext + SupervisorJob(coroutineContext.job))
 
 Passing `coroutineContext.job` as the parent makes the SupervisorJob a child of the Application's Job. On shutdown, the Application cancels its Job, which propagates to the SupervisorJob, which cancels all pending notifications cleanly.
 
-### 2. TOCTOU race in createUser
+### 2. ~~TOCTOU race in createUser~~ FIXED
 
 **File:** `UserRepositoryImplementation.kt:18-31`
 
@@ -239,7 +239,7 @@ The `AuthRoutesTest` refresh token test likely uses `Thread.sleep(1000)` to wait
 | # | Issue | Severity | Effort | Status |
 |---|-------|----------|--------|--------|
 | 1 | NotificationService scope leak on shutdown | High | Low | FIXED (A1) |
-| 2 | TOCTOU race in createUser | Medium | Medium | Open |
+| 2 | TOCTOU race in createUser | Medium | Medium | FIXED |
 | 3 | RecipeService cached flag bug | Medium | Low | FIXED (A4) |
 | 7 | Unnecessary async for JWT generation | Low | Low | FIXED (A2) |
 | 8 | Hardcoded dispatcher in PasswordUtils | Low | Low | Open |
