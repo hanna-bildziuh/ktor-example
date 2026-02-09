@@ -2,7 +2,6 @@ package plugins
 
 import exceptions.AuthenticationException
 import exceptions.AuthenticationRequiredException
-import exceptions.ConflictException
 import exceptions.ValidationException
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -45,18 +44,6 @@ fun Application.configureStatusPages() {
                     title = "Authentication Required",
                     status = 401,
                     detail = cause.message ?: "Authentication required"
-                )
-            )
-        }
-
-        exception<ConflictException> { call, cause ->
-            call.respond(
-                HttpStatusCode.Conflict,
-                Problem(
-                    type = "https://whattoeat.example.com/problems/conflict",
-                    title = "Resource Conflict",
-                    status = 409,
-                    detail = cause.message ?: "Resource conflict"
                 )
             )
         }

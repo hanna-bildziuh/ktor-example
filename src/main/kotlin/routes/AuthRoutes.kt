@@ -39,13 +39,8 @@ fun Route.configureAuthRoutes(userRepository: UserRepository, tokenRepository: T
                     notificationService.sendWelcomeNotification(userData.userId!!, userData.email!!)
                     call.respond(HttpStatusCode.Created, userData)
                 },
-                onFailure = { exception ->
-                    val isConflict = exception.message?.contains("already registered") == true
-                    if (isConflict) {
-                        call.respond(HttpStatusCode.Created, UserData(email = request.email))
-                    } else {
-                        throw exception
-                    }
+                onFailure = {
+                    call.respond(HttpStatusCode.Created, UserData(email = request.email))
                 }
             )
         }

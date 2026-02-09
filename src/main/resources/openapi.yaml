@@ -100,20 +100,6 @@ paths:
                     title: "Validation Error"
                     status: 400
                     detail: "Password must contain at least one uppercase letter"
-        '409':
-          description: Email already registered
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/Problem'
-              examples:
-                emailExists:
-                  summary: Email already exists
-                  value:
-                    type: "https://whattoeat.example.com/problems/conflict"
-                    title: "Resource Conflict"
-                    status: 409
-                    detail: "Email already registered"
         '500':
           description: Internal server error
           content:
