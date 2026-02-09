@@ -226,6 +226,18 @@
             <version>${ktor.version}</version>
         </dependency>
 
+        <!-- JWT Authentication -->
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-auth-jvm</artifactId>
+            <version>${ktor.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-auth-jwt-jvm</artifactId>
+            <version>${ktor.version}</version>
+        </dependency>
+
         <!-- Exposed ORM -->
         <dependency>
             <groupId>org.jetbrains.exposed</groupId>

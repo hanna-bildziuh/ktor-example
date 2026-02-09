@@ -1,5 +1,25 @@
 # Create Account Flow Implementation Plan
 
+## Implementation Status
+
+| Component                                 | Status                             |
+|-------------------------------------------|------------------------------------|
+| Database Schema (Users table)             | DONE                               |
+| API Endpoint (POST /auth/register)        | DONE                               |
+| DTOs (RegisterRequest, UserData, Problem) | DONE (auto-generated from OpenAPI) |
+| Password Security (BCrypt)                | DONE                               |
+| Input Validation (ValidationUtils)        | DONE                               |
+| Service Layer (UserRepository)            | DONE                               |
+| Routing Configuration (AuthRoutes)        | DONE                               |
+| Application Setup (WhatToEat.kt)          | DONE                               |
+| jbcrypt Dependency                        | DONE                               |
+| Login Flow (POST /auth/login)             | DONE                               |
+| JWT Authentication                        | DONE                               |
+| Token Refresh (POST /auth/refresh)        | DONE                               |
+| User Profile (GET /user/profile)          | DONE                               |
+| Password Reset                            | NOT STARTED                        |
+| Recipe Management                         | NOT STARTED                        |
+
 ## Overview
 This document outlines the detailed implementation plan for the user registration (create account) flow in the Ktor-based application using Exposed ORM and JWT authentication.
 
@@ -466,7 +486,7 @@ fun Application.configureDatabase() {
 
 ## 8. Implementation Steps
 
-### Step 1: Add BCrypt Dependency
+### Step 1: Add BCrypt Dependency -- DONE
 Update `pom.xml` to include jBCrypt:
 ```xml
 <dependency>
@@ -476,78 +496,84 @@ Update `pom.xml` to include jBCrypt:
 </dependency>
 ```
 
-### Step 2: Create Project Structure
+### Step 2: Create Project Structure -- DONE
+Actual project structure:
 ```
 src/main/kotlin/
-├── Application.kt
-├── models/
-│   ├── User.kt
-│   └── dto/
-│       ├── RegisterRequest.kt
-│       └── RegisterResponse.kt
-├── database/
-│   └── Tables.kt
-├── services/
-│   ├── UserService.kt
-│   └── UserServiceImpl.kt
+├── WhatToEat.kt                          (Application entry point)
+├── plugins/
+│   └── AuthPlugin.kt                     (JWT authentication config)
+├── repositories/
+│   ├── UserRepository.kt                 (Interface)
+│   ├── TokenRepository.kt                (Interface)
+│   ├── database/
+│   │   ├── Users.kt                      (Exposed table + User data class)
+│   │   └── RefreshTokens.kt              (Exposed table + RefreshToken data class)
+│   └── services/
+│       ├── UserRepositoryImplementation.kt
+│       └── TokenRepositoryImplementation.kt
 ├── routes/
-│   └── AuthRoutes.kt
+│   ├── AuthRoutes.kt                     (POST /auth/register, /login, /refresh)
+│   ├── GenericRoute.kt                   (Health check + Swagger UI)
+│   └── UserRoutes.kt                     (GET /user/profile - protected)
 └── utils/
     ├── PasswordUtils.kt
-    └── ValidationUtils.kt
+    ├── ValidationUtils.kt
+    └── JwtUtils.kt                        (JWT token generation/verification)
 ```
+DTOs are auto-generated from OpenAPI spec via openapi-generator-maven-plugin into `target/generated-sources/`.
 
-### Step 3: Implement Database Layer
-1. Create `Tables.kt` with Users table definition
-2. Set up database connection in Application.kt
-3. Create schema on application startup
+### Step 3: Implement Database Layer -- DONE
+1. Created `Users.kt` with Users table definition
+2. Database connection configured in WhatToEat.kt (H2 in-memory)
+3. Schema created on application startup via `SchemaUtils.create(Users)`
 
-### Step 4: Create DTOs
-1. Define `RegisterRequest.kt`
-2. Define `RegisterResponse.kt` and `UserData.kt`
-3. Add `@Serializable` annotations
+### Step 4: Create DTOs -- DONE
+DTOs are auto-generated from OpenAPI spec:
+- `RegisterRequest`, `UserData`, `Problem`
+- Also generated for future use: `LoginRequest`, `AuthData`, `TokenData`, `RefreshTokenRequest`, `UserProfile`
 
-### Step 5: Implement Utilities
-1. Create `PasswordUtils.kt` for BCrypt hashing
-2. Create `ValidationUtils.kt` for input validation
-3. Add comprehensive validation rules
+### Step 5: Implement Utilities -- DONE
+1. `PasswordUtils.kt` - BCrypt hashing with 12 salt rounds
+2. `ValidationUtils.kt` - Email and password validation with comprehensive rules
 
-### Step 6: Implement Service Layer
-1. Define `UserService` interface
-2. Implement `UserServiceImpl` with database operations
-3. Add error handling and transaction management
+### Step 6: Implement Service Layer -- DONE
+1. `UserRepository` interface (createUser, getUserByEmail, emailExists)
+2. `UserRepositoryImplementation` with Exposed ORM and suspended transactions
+3. Error handling with `Result<T>` return types
 
-### Step 7: Create Routes
-1. Implement `configureAuthRoutes` function
-2. Add POST `/api/auth/register` endpoint
-3. Wire up validation, service calls, and responses
+### Step 7: Create Routes -- DONE
+1. `configureAuthRoutes` function implemented
+2. POST `/auth/register` endpoint working
+3. Validation, service calls, and Problem+JSON error responses wired up
 
-### Step 8: Configure Application
-1. Set up content negotiation (JSON)
-2. Initialize database connection
-3. Register routes
-4. Start server
+### Step 8: Configure Application -- DONE
+1. Content negotiation (JSON) configured
+2. H2 database connection initialized
+3. Routes registered (auth + generic)
+4. CORS configured
+5. Server starts on port 8080
 
 ### Step 9: Testing
 Test the endpoint using curl:
 ```bash
 # Successful registration
-curl -X POST http://localhost:8080/api/auth/register \
+curl -X POST http://localhost:8080/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"SecurePass123!"}'
 
 # Duplicate email
-curl -X POST http://localhost:8080/api/auth/register \
+curl -X POST http://localhost:8080/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"AnotherPass123!"}'
 
 # Invalid email
-curl -X POST http://localhost:8080/api/auth/register \
+curl -X POST http://localhost:8080/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"invalid-email","password":"SecurePass123!"}'
 
 # Weak password
-curl -X POST http://localhost:8080/api/auth/register \
+curl -X POST http://localhost:8080/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"weak"}'
 ```
@@ -582,30 +608,35 @@ curl -X POST http://localhost:8080/api/auth/register \
 
 ## 10. Next Steps
 
-After implementing the create account flow:
+The create account flow is fully implemented. See also: [Login Flow & JWT Authentication](login-flow-jwt-auth.md).
 
-1. **Login Flow**
-   - Implement POST `/api/auth/login`
-   - Generate JWT tokens
-   - Return access and refresh tokens
+1. **Login Flow** -- DONE
+   - POST `/auth/login` implemented in `AuthRoutes.kt`
+   - JWT access + refresh tokens generated via `JwtUtils`
+   - Returns `AuthData` (userId, email, accessToken, refreshToken, expiresIn)
 
-2. **JWT Authentication**
-   - Add JWT library dependency
-   - Implement token generation
-   - Create authentication middleware
-   - Protect API endpoints
+2. **JWT Authentication** -- DONE
+   - `ktor-server-auth-jvm` and `ktor-server-auth-jwt-jvm` dependencies added
+   - `JwtUtils` handles token generation/verification (HMAC256)
+   - `AuthPlugin.kt` configures Ktor JWT verifier (`"auth-jwt"`)
+   - Protected routes use `authenticate("auth-jwt") { ... }`
 
-3. **Password Reset**
+3. **Token Refresh** -- DONE
+   - POST `/auth/refresh` implemented in `AuthRoutes.kt`
+   - Token rotation: old refresh token revoked, new pair issued
+   - `TokenRepository` + `RefreshTokens` table for DB-backed token storage
+
+4. **User Profile** -- DONE
+   - GET `/user/profile` implemented in `UserRoutes.kt`
+   - Protected by JWT authentication
+   - Returns `UserProfile` (userId, email, createdAt, updatedAt)
+
+5. **Password Reset** -- NOT STARTED
    - Implement forgot password flow
    - Email verification
    - Token-based password reset
 
-4. **User Profile**
-   - GET `/api/user/profile`
-   - Update user information
-   - Change password endpoint
-
-5. **Recipe Management**
+6. **Recipe Management** -- NOT STARTED
    - Create recipes table
    - Implement favorite recipes feature
    - Link recipes to users
@@ -620,8 +651,14 @@ After implementing the create account flow:
 - [x] ktor-server-content-negotiation-jvm
 - [x] ktor-serialization-kotlinx-json-jvm
 - [x] exposed-core
+- [x] exposed-dao
 - [x] exposed-jdbc
+- [x] exposed-java-time
 - [x] h2 database
-- [ ] jbcrypt (needs to be added)
-- [ ] ktor-server-auth-jvm (for JWT, add later)
-- [ ] ktor-server-auth-jwt-jvm (for JWT, add later)
+- [x] jbcrypt
+- [x] kotlinx-coroutines-core
+- [x] kotlinx-datetime
+- [x] ktor-server-openapi / ktor-server-swagger-jvm
+- [x] logback-classic
+- [x] ktor-server-auth-jvm
+- [x] ktor-server-auth-jwt-jvm

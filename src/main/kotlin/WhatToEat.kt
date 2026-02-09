@@ -12,10 +12,14 @@ import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
+import plugins.configureAuthentication
+import repositories.database.RefreshTokens
 import repositories.database.Users
+import repositories.services.TokenRepositoryImplementation
 import repositories.services.UserRepositoryImplementation
 import routes.configureAuthRoutes
 import routes.configureGenericRoutes
+import routes.configureUserRoutes
 
 fun main() {
     embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = Application::module)
@@ -25,6 +29,7 @@ fun main() {
 fun Application.module() {
     configureCORS()
     configureSerialization()
+    configureAuthentication()
     configureDatabase()
     configureRouting()
 }
@@ -65,15 +70,17 @@ fun configureDatabase() {
 
     // Create database tables
     transaction {
-        SchemaUtils.create(Users)
+        SchemaUtils.create(Users, RefreshTokens)
     }
 }
 
 fun Application.configureRouting() {
     val userRepository = UserRepositoryImplementation()
+    val tokenRepository = TokenRepositoryImplementation()
 
     routing {
         configureGenericRoutes()
-        configureAuthRoutes(userRepository)
+        configureAuthRoutes(userRepository, tokenRepository)
+        configureUserRoutes(userRepository)
     }
 }
