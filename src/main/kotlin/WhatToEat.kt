@@ -20,6 +20,7 @@ import repositories.services.TokenRepositoryImplementation
 import repositories.services.UserRepositoryImplementation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.job
 import routes.configureAuthRoutes
 import routes.configureGenericRoutes
 import routes.configureRecipeRoutes
@@ -88,7 +89,7 @@ fun configureDatabase() {
 fun Application.configureRouting(claudeClient: ClaudeClient? = null) {
     val userRepository = UserRepositoryImplementation()
     val tokenRepository = TokenRepositoryImplementation()
-    val notificationService = NotificationService(CoroutineScope(coroutineContext + SupervisorJob()))
+    val notificationService = NotificationService(CoroutineScope(coroutineContext + SupervisorJob(coroutineContext.job)))
     val healthService = HealthService()
     val recipeCache = RecipeCache()
     val recipeService = RecipeService(claudeClient ?: ClaudeClientImplementation(), recipeCache)

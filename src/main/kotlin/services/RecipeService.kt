@@ -27,18 +27,15 @@ class RecipeService(
         dietaryRestrictions: List<String>
     ): RecipeResponse {
         val cacheKey = buildCacheKey(ingredients, dietaryRestrictions)
-
-        val cachedValue = recipeCache.get(cacheKey)
-        if (cachedValue != null) {
-            return parseRecipeResponse(cachedValue, cached = true)
-        }
-
         val prompt = buildPrompt(ingredients, dietaryRestrictions)
+        var wasComputed = false
+
         val result = recipeCache.getOrCompute(cacheKey) {
+            wasComputed = true
             claudeClient.generateRecipe(prompt)
         }
 
-        return parseRecipeResponse(result, cached = false)
+        return parseRecipeResponse(result, cached = !wasComputed)
     }
 
     internal fun buildCacheKey(

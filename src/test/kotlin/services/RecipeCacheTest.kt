@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class RecipeCacheTest {
 
@@ -104,5 +105,16 @@ class RecipeCacheTest {
         }
 
         assertEquals(5, computeCount.get())
+    }
+
+    @Test
+    fun `mutexMap is cleaned up after computation completes`() = runTest {
+        val cache = RecipeCache()
+
+        for (i in 1..20) {
+            cache.getOrCompute("key-$i") { "result-$i" }
+        }
+
+        assertTrue(cache.mutexMap.isEmpty(), "mutexMap should be empty after all computations complete")
     }
 }

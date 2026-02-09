@@ -6,6 +6,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import utils.JwtUtils
+import kotlin.time.measureTimedValue
 
 @Serializable
 data class ComponentHealth(
@@ -37,19 +38,19 @@ open class HealthService(
     }
 
     private suspend fun checkComponent(check: suspend () -> Unit): ComponentHealth {
-        val start = System.currentTimeMillis()
-        val result = withTimeoutOrNull(timeoutMs) {
-            try {
-                check()
-                true
-            } catch (_: Exception) {
-                false
+        val (result, duration) = measureTimedValue {
+            withTimeoutOrNull(timeoutMs) {
+                try {
+                    check()
+                    true
+                } catch (_: Exception) {
+                    false
+                }
             }
         }
-        val elapsed = System.currentTimeMillis() - start
         return ComponentHealth(
             status = if (result == true) "up" else "down",
-            responseTimeMs = elapsed
+            responseTimeMs = duration.inWholeMilliseconds
         )
     }
 

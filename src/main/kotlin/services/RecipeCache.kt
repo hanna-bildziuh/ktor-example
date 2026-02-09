@@ -15,7 +15,7 @@ class RecipeCache(
         .expireAfterWrite(expireAfterWriteMinutes, TimeUnit.MINUTES)
         .build<String, String>()
 
-    private val mutexMap = ConcurrentHashMap<String, Mutex>()
+    internal val mutexMap = ConcurrentHashMap<String, Mutex>()
 
     fun get(key: String): String? = cache.getIfPresent(key)
 
@@ -32,6 +32,7 @@ class RecipeCache(
 
             val result = compute()
             cache.put(key, result)
+            mutexMap.remove(key)
             result
         }
     }

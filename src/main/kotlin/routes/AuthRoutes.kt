@@ -8,8 +8,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import models.dto.AuthData
 import models.dto.LoginRequest
 import models.dto.RefreshTokenRequest
@@ -63,11 +61,8 @@ fun Route.configureAuthRoutes(userRepository: UserRepository, tokenRepository: T
                 throw AuthenticationException("Invalid email or password")
             }
 
-            val (accessToken, refreshToken) = coroutineScope {
-                val accessDeferred = async { JwtUtils.generateAccessToken(user.id, user.email) }
-                val refreshDeferred = async { JwtUtils.generateRefreshToken(user.id, user.email) }
-                accessDeferred.await() to refreshDeferred.await()
-            }
+            val accessToken = JwtUtils.generateAccessToken(user.id, user.email)
+            val refreshToken = JwtUtils.generateRefreshToken(user.id, user.email)
 
             tokenRepository.storeRefreshToken(
                 userId = user.id,
