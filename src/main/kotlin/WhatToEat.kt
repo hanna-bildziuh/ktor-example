@@ -17,9 +17,12 @@ import repositories.database.RefreshTokens
 import repositories.database.Users
 import repositories.services.TokenRepositoryImplementation
 import repositories.services.UserRepositoryImplementation
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import routes.configureAuthRoutes
 import routes.configureGenericRoutes
 import routes.configureUserRoutes
+import services.NotificationService
 
 fun main() {
     embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = Application::module)
@@ -77,10 +80,11 @@ fun configureDatabase() {
 fun Application.configureRouting() {
     val userRepository = UserRepositoryImplementation()
     val tokenRepository = TokenRepositoryImplementation()
+    val notificationService = NotificationService(CoroutineScope(coroutineContext + SupervisorJob()))
 
     routing {
         configureGenericRoutes()
-        configureAuthRoutes(userRepository, tokenRepository)
+        configureAuthRoutes(userRepository, tokenRepository, notificationService)
         configureUserRoutes(userRepository)
     }
 }

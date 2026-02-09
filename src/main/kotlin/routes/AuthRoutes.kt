@@ -14,12 +14,13 @@ import models.dto.RegisterRequest
 import models.dto.TokenData
 import repositories.TokenRepository
 import repositories.UserRepository
+import services.NotificationService
 import utils.JwtUtils
 import utils.PasswordUtils
 import utils.ValidationUtils
 import java.time.Instant
 
-fun Route.configureAuthRoutes(userRepository: UserRepository, tokenRepository: TokenRepository) {
+fun Route.configureAuthRoutes(userRepository: UserRepository, tokenRepository: TokenRepository, notificationService: NotificationService) {
     route("/auth") {
         post("/register") {
             try {
@@ -43,6 +44,7 @@ fun Route.configureAuthRoutes(userRepository: UserRepository, tokenRepository: T
 
                 result.fold(
                     onSuccess = { userData ->
+                        notificationService.sendWelcomeNotification(userData.userId!!, userData.email!!)
                         call.respond(HttpStatusCode.Created, userData)
                     },
                     onFailure = { exception ->
