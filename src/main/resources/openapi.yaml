@@ -21,6 +21,8 @@ tags:
     description: User profile and settings endpoints
   - name: Health
     description: System health and status endpoints
+  - name: Recipes
+    description: AI-powered recipe search endpoints
 
 paths:
   /health:
@@ -226,6 +228,65 @@ paths:
                     title: "Authentication Failed"
                     status: 401
                     detail: "Invalid or expired refresh token"
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+  /recipes/search:
+    post:
+      tags:
+        - Recipes
+      summary: Search for a recipe
+      description: |
+        Search for a recipe based on available ingredients and dietary restrictions.
+        Uses AI to generate a recipe suggestion. Results are cached to reduce API calls.
+      operationId: searchRecipe
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeSearchRequest'
+            examples:
+              basicSearch:
+                summary: Search with ingredients
+                value:
+                  ingredients:
+                    - chicken
+                    - rice
+                    - broccoli
+                  dietary_restrictions:
+                    - gluten-free
+      responses:
+        '200':
+          description: Recipe found successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized - Missing or invalid token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '504':
+          description: Gateway Timeout - AI service did not respond in time
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '500':
           description: Internal server error
           content:
@@ -455,3 +516,59 @@ components:
           format: date-time
           description: Last profile update timestamp in RFC 3339 format
           example: "2025-11-22T20:15:00Z"
+
+    RecipeSearchRequest:
+      type: object
+      required:
+        - ingredients
+      properties:
+        ingredients:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: List of available ingredients
+          example:
+            - chicken
+            - rice
+            - broccoli
+        dietary_restrictions:
+          type: array
+          items:
+            type: string
+          description: Optional dietary restrictions or allergies
+          example:
+            - gluten-free
+
+    RecipeResponse:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Recipe title
+          example: "Chicken Broccoli Rice Bowl"
+        ingredients:
+          type: array
+          items:
+            type: string
+          description: List of ingredients with quantities
+          example:
+            - "2 chicken breasts"
+            - "1 cup rice"
+            - "2 cups broccoli florets"
+        instructions:
+          type: string
+          description: Step-by-step cooking instructions
+          example: "1. Cook rice according to package directions..."
+        preparation_time:
+          type: string
+          description: Estimated preparation time
+          example: "30 minutes"
+        servings:
+          type: integer
+          description: Number of servings
+          example: 4
+        cached:
+          type: boolean
+          description: Whether the response was served from cache
+          example: false

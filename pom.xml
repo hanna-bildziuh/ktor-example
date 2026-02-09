@@ -286,6 +286,20 @@
             <version>0.4</version>
         </dependency>
 
+        <!-- Ktor HTTP Client -->
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-client-cio-jvm</artifactId>
+            <version>${ktor.version}</version>
+        </dependency>
+
+        <!-- Caffeine Cache -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>3.1.8</version>
+        </dependency>
+
         <!-- Test Dependencies -->
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -308,6 +322,11 @@
         <dependency>
             <groupId>io.ktor</groupId>
             <artifactId>ktor-client-content-negotiation-jvm</artifactId>
+            <version>${ktor.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-client-mock-jvm</artifactId>
             <version>${ktor.version}</version>
             <scope>test</scope>
         </dependency>
