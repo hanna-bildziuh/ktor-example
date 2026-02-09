@@ -28,7 +28,6 @@ This project demonstrates several Kotlin coroutine patterns applied to genuine u
 |---------|-------|-----|
 | `withContext(Dispatchers.Default)` | Password hashing | Offloads CPU-heavy BCrypt from the event loop |
 | `coroutineScope { async {} }` | User registration | Runs email-exists check and password hashing in parallel |
-| `coroutineScope { async {} }` | Login token generation | Generates access and refresh tokens concurrently |
 | `scope.launch` | Notification service | Fire-and-forget background work after registration |
 | `async` + `withTimeoutOrNull` | Health checks | Resilient parallel subsystem checks with deadlines |
 | Ktor HTTP Client (suspend) | Claude API client | Suspend-based external HTTP calls |
