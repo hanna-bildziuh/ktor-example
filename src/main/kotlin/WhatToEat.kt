@@ -23,6 +23,7 @@ import kotlinx.coroutines.SupervisorJob
 import routes.configureAuthRoutes
 import routes.configureGenericRoutes
 import routes.configureUserRoutes
+import services.HealthService
 import services.NotificationService
 
 fun main() {
@@ -83,9 +84,10 @@ fun Application.configureRouting() {
     val userRepository = UserRepositoryImplementation()
     val tokenRepository = TokenRepositoryImplementation()
     val notificationService = NotificationService(CoroutineScope(coroutineContext + SupervisorJob()))
+    val healthService = HealthService()
 
     routing {
-        configureGenericRoutes()
+        configureGenericRoutes(healthService)
         configureAuthRoutes(userRepository, tokenRepository, notificationService)
         configureUserRoutes(userRepository)
     }
