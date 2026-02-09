@@ -1,13 +1,11 @@
 package plugins
 
-import io.ktor.http.HttpStatusCode
+import exceptions.AuthenticationRequiredException
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
-import io.ktor.server.response.respond
-import models.dto.Problem
 import utils.JwtUtils
 
 fun Application.configureAuthentication() {
@@ -32,15 +30,7 @@ fun Application.configureAuthentication() {
             }
 
             challenge { _, _ ->
-                call.respond(
-                    HttpStatusCode.Unauthorized,
-                    Problem(
-                        type = "https://whattoeat.example.com/problems/authentication-required",
-                        title = "Authentication Required",
-                        status = 401,
-                        detail = "Missing or invalid authentication token"
-                    )
-                )
+                throw AuthenticationRequiredException("Missing or invalid authentication token")
             }
         }
     }

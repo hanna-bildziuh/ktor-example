@@ -59,7 +59,7 @@ class AuthRoutesTest {
     }
 
     @Test
-    fun `POST register returns 409 for duplicate email`() = testApplication {
+    fun `POST register returns 201 for duplicate email to prevent enumeration`() = testApplication {
         application { module() }
         val client = jsonClient()
         client.post("/auth/register") {
@@ -70,7 +70,7 @@ class AuthRoutesTest {
             contentType(ContentType.Application.Json)
             setBody(RegisterRequest(email = "dup@example.com", password = "MyPass1!"))
         }
-        assertEquals(HttpStatusCode.Conflict, response.status)
+        assertEquals(HttpStatusCode.Created, response.status)
     }
 
     @Test

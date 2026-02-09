@@ -225,6 +225,11 @@
             <artifactId>ktor-server-cors-jvm</artifactId>
             <version>${ktor.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-status-pages-jvm</artifactId>
+            <version>${ktor.version}</version>
+        </dependency>
 
         <!-- JWT Authentication -->
         <dependency>

@@ -13,6 +13,7 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import plugins.configureAuthentication
+import plugins.configureStatusPages
 import repositories.database.RefreshTokens
 import repositories.database.Users
 import repositories.services.TokenRepositoryImplementation
@@ -32,6 +33,7 @@ fun main() {
 fun Application.module() {
     configureCORS()
     configureSerialization()
+    configureStatusPages()
     configureAuthentication()
     configureDatabase()
     configureRouting()
